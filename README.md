@@ -42,6 +42,60 @@ codebuddy plugin validate ./agentest-skillhub     # 校验清单
 codebuddy plugin marketplace update agentest-skillhub
 ```
 
+## 跨工具兼容
+
+这个仓库不是 WorkBuddy 专属的，它按**两层**对外暴露能力，越往下兼容面越宽。
+
+### 第一层：市场协议（直接 `marketplace add`）
+
+`.claude-plugin/marketplace.json` 是 Anthropic 定义的插件市场格式，以下工具**原生识别**，
+添加市场 + 安装插件各一条命令：
+
+| 工具 | 添加市场 | 安装 |
+| --- | --- | --- |
+| WorkBuddy / CodeBuddy | `codebuddy plugin marketplace add XuePengJu/agentest-skillhub` | `codebuddy plugin install <插件>@agentest-skillhub` |
+| Claude Code | `claude plugin marketplace add XuePengJu/agentest-skillhub` | `claude plugin install <插件>@agentest-skillhub` |
+| Claude Desktop (Cowork) | 设置 → Plugins & skills → Add marketplace → GitHub repo | 面板内点击安装 |
+
+> 选 `.claude-plugin` 而不是 `.codebuddy-plugin` 正是为了这一层兼容 —— WorkBuddy 源码里
+> 这三种目录名都认，而 Claude Code 只认 `.claude-plugin`。
+
+### 第二层：技能体（`SKILL.md`）
+
+`SKILL.md` 是开放标准（Agent Skills），**40+ 工具**都读：Cursor、GitHub Copilot、
+Gemini CLI、Windsurf、Codex、OpenCode、Goose、Amp、Cline、Roo Code、OpenHands、
+Kiro、Junie 等。即使目标工具没有市场机制，把技能目录整个拷进去也能用。
+
+Codex CLI 自带 `skill-installer`，可以从本仓库**直接装单个技能**（路径 basename 即为技能名，
+本仓库 `plugins/<插件>/` 目录下就是 `SKILL.md`，符合它的要求）：
+
+```bash
+$CODEX_HOME/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo XuePengJu/agentest-skillhub \
+  --path plugins/hot-news-summary
+```
+
+其他工具的通用放法（优先 `.agents/skills/`，这是跨工具约定路径）：
+
+| 工具 | 项目级 | 用户级 |
+| --- | --- | --- |
+| 通用约定 | `.agents/skills/` | `~/.agents/skills/` |
+| Claude Code | `.claude/skills/` | `~/.claude/skills/` |
+| Codex CLI | `.codex/skills/` | `~/.codex/skills/` |
+| Cursor | `.cursor/skills/` | —（仅项目级） |
+| GitHub Copilot | `.github/skills/` | `~/.copilot/skills/` |
+| Gemini CLI | `.gemini/skills/` | `~/.gemini/skills/` |
+| Windsurf | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
+| OpenCode | `.opencode/skills/` | `~/.config/opencode/skills/` |
+| Goose | `.goose/skills/` | `~/.config/goose/skills/` |
+
+### 跨工具时要注意的
+
+- 插件特有的 `.mcp.json`、hooks、agents、`allowed-tools` 等是**各家私有**的。跨工具后这些会
+  被静默忽略，插件退化成"纯技能"，仍然可用，但权限约束等不会被强制。
+- 想让技能尽量通用，`SKILL.md` 的 frontmatter 只保留 `name` + `description`，正文用纯 Markdown。
+- Cursor 装完技能需要重载窗口才会出现；Codex 需要重启。
+
 ## 仓库结构
 
 ```
