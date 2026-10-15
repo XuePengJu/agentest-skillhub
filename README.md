@@ -17,14 +17,14 @@
 
 ```bash
 codebuddy plugin marketplace add XuePengJu/agentest-skillhub
-codebuddy plugin install hot-news-summary@agentest-skillhub
+codebuddy plugin install patchright-browser@agentest-skillhub
 ```
 
 ### Claude Code
 
 ```bash
 claude plugin marketplace add XuePengJu/agentest-skillhub
-claude plugin install hot-news-summary@agentest-skillhub
+claude plugin install patchright-browser@agentest-skillhub
 ```
 
 ### 本地开发时
@@ -72,7 +72,7 @@ Codex CLI 自带 `skill-installer`，可以从本仓库**直接装单个技能**
 ```bash
 $CODEX_HOME/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo XuePengJu/agentest-skillhub \
-  --path plugins/hot-news-summary
+  --path plugins/patchright-browser
 ```
 
 其他工具的通用放法（优先 `.agents/skills/`，这是跨工具约定路径）：
@@ -121,7 +121,6 @@ agentest-skillhub/
 
 | 技能 | 版本 | 说明 |
 | --- | --- | --- |
-| [`hot-news-summary`](./plugins/hot-news-summary) | 2.0.0 | 聚合 8 大平台热榜，结构化评分筛 Top10，生成三层洞察点评 |
 | [`patchright-browser`](./plugins/patchright-browser) | 1.0.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP |
 
 ## 添加一个新技能
@@ -130,17 +129,17 @@ agentest-skillhub/
 `plugin.json`、并把它登记进 `marketplace.json`：
 
 ```bash
-# 看有哪些可以导入
+# 看有哪些可以导入（第三方技能会被标注出来）
 python3 scripts/import_skill.py --list
 
 # 导入指定技能
-python3 scripts/import_skill.py weather-open-meteo BT-Node-Project-Deploy
+python3 scripts/import_skill.py BT-Node-Project-Deploy kb-archive-audit
 
-# 全量导入
+# 全量导入（自动跳过第三方技能）
 python3 scripts/import_skill.py --all
 
 # 指定版本号
-python3 scripts/import_skill.py nuwa-skill --version 1.2.0
+python3 scripts/import_skill.py library-port --version 1.0.0
 ```
 
 导入后提交发布：
@@ -148,6 +147,23 @@ python3 scripts/import_skill.py nuwa-skill --version 1.2.0
 ```bash
 git add -A && git commit -m "feat: import weather-open-meteo" && git push
 ```
+
+### ⚠️ 只发布你自己的作品
+
+本机 `~/.workbuddy/skills/` 里的技能**不都是你的作品**：从技能商店装进来的第三方技能，
+目录里会带一个 `_skillhub_meta.json`。把它收录进本市场并署上自己的名字、代原作者声明
+许可，等于**转载他人作品 + 改署名**，不能这么发。
+
+导入脚本会自动识别并**默认拒绝**：
+
+```
+✗ hot-news-summary: 这是从技能商店安装的第三方技能（每日话题助手 v1.0.2），不是你自己的作品。
+    发布它会构成转载 + 改署名；确认要收录请加 --allow-third-party
+```
+
+`--list` 也会把第三方技能单独标出来，`--all` 会跳过它们。确需收录时加 `--allow-third-party`，
+脚本会自动打上 `.skillhub-manual` 标记（防止下次导入冲掉你手改的署名），并提示你
+把 `author` / `license` / 版本号改回**如实**的值。
 
 ### 导入时会自动剔除什么
 

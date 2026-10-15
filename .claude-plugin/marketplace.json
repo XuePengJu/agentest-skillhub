@@ -7,20 +7,6 @@
   },
   "plugins": [
     {
-      "name": "hot-news-summary",
-      "description": "聚合 8 大平台热榜数据，结构化评分筛选 Top10 热点，生成三层洞察点评",
-      "version": "2.0.0",
-      "source": "./plugins/hot-news-summary",
-      "author": {
-        "name": "xuepengju",
-        "url": "https://agentest.vip"
-      },
-      "category": "information",
-      "homepage": "https://agentest.vip",
-      "repository": "https://github.com/XuePengJu/agentest-skillhub",
-      "license": "MIT"
-    },
-    {
       "name": "patchright-browser",
       "description": "反检测浏览器操作技能（Patchright 驱动）。当普通抓取遇到 Cloudflare/DataDome 等风控墙、强反爬站点（小红书/闲鱼等敏感操作）、需要隐身身份隔离于日常浏览器，或需要渲染/点击/登录态时使用。本技能通过常驻控制服务暴露精简 CLI，token 消耗远低于 MCP 方案。日常搜索、读静态页优先 WebFetch/curl，不要用本技能。",
       "version": "1.0.0",
