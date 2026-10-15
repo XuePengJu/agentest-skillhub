@@ -1,0 +1,24 @@
+{
+  "name": "agentest-skillhub",
+  "description": "agentest 技能市场 —— AI 应用开发与 Agent 工具的实战技能集合",
+  "owner": {
+    "name": "xuepengju",
+    "url": "https://agentest.vip"
+  },
+  "plugins": [
+    {
+      "name": "hot-news-summary",
+      "description": "聚合 8 大平台热榜数据，结构化评分筛选 Top10 热点，生成三层洞察点评",
+      "version": "2.0.0",
+      "source": "./plugins/hot-news-summary",
+      "author": {
+        "name": "xuepengju",
+        "url": "https://agentest.vip"
+      },
+      "category": "information",
+      "homepage": "https://agentest.vip",
+      "repository": "https://github.com/XuePengJu/agentest-skillhub",
+      "license": "MIT"
+    }
+  ]
+}
