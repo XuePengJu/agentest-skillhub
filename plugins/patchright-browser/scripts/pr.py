@@ -23,7 +23,22 @@ PROFILE = os.path.expanduser(
 SHOT_DIR = os.environ.get("PR_SHOT_DIR", "/tmp")
 MAX_OUT = int(os.environ.get("PR_MAX_OUT", "4000"))
 
-STATE = {"pw": None, "ctx": None}
+STATE = {"pw": None, "ctx": None, "chrome_pid": None, "lock_seen": False}
+
+
+def _pid_alive(pid):
+    """进程是否存在：True / False / None（无法判定）。"""
+    if not pid:
+        return None
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:      # 存在但无权限发信号
+        return True
+    except OSError:
+        return None
 
 
 def _lock_pid():
@@ -37,28 +52,47 @@ def _lock_pid():
         return None
 
 
-def browser_alive():
-    """浏览器是否真的还活着：True / False / None（本平台拿不到判据）。
-
-    实测（2026-10-16，双向验证过 kill 确实生效）：浏览器被强杀或用户彻底退出后，
-    ctx.pages 会返回**陈旧**的页面列表、ctx.browser.is_connected() 仍返回 True、
-    close / disconnected 事件也都不触发 —— 这三个官方信号全都不可信。后果是服务
-    永不退出、/status 恒报 running:true（假阳性），而任何真实操作会永久挂起。
-    故改看 Chrome 的进程单例文件：
-        正常运行  profile/SingletonLock -> "<hostname>-<pid>"，且该 pid 存活
-        干净退出  Chrome 自行删除该文件
-        被强杀    文件残留为悬空符号链接，pid 已不存在
-    """
-    if STATE.get("ctx") is None:
-        return False
+def _lock_state():
+    """单例锁给出的判据：True=锁在且进程活 / False=锁在但进程已死 / None=无锁或不可解析。"""
     pid = _lock_pid()
     if pid is None:
         return None
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
+    return False if _pid_alive(pid) is False else True
+
+
+def browser_alive():
+    """浏览器是否真的还活着：True / False / None（本平台拿不到判据）。
+
+    实测（2026-10-16）浏览器消失后，patchright 三个官方信号全都不可信：
+    ctx.pages 返回**陈旧**页面列表、ctx.browser.is_connected() 仍回 True、
+    context.close / browser.disconnected 事件都不触发。后果是服务永不退出、
+    /status 恒报 running:true（假阳性），而任何真实操作会永久挂起把单线程服务堵死。
+
+    判活按可靠性依次降级：
+      1) launch() 时记录下的 Chrome 主进程 PID（最直接，且能覆盖"锁被删掉"的情形）
+      2) profile/SingletonLock -> "<hostname>-<pid>"：锁在且 pid 活 => 活；
+         锁在但 pid 已死 => 死（强杀 / 崩溃留下的悬空链接）
+      3) 启动时锁存在过、现在没了 => Chrome 已优雅退出并自行清理 => 死
+      4) 都不适用 => None，由调用方退回 ctx.pages 旧判据
+
+    已知局限：判据 1 依赖 PID 未被回收；极端情况下（Chrome 退出后该 PID 恰好被
+    无关进程复用）会误判为仍存活 —— 概率极低，且退化后的行为与旧版一致。
+    """
+    if STATE.get("ctx") is None:
         return False
+    rec = STATE.get("chrome_pid")
+    if rec:
+        a = _pid_alive(rec)
+        if a is False:
+            return False        # 强杀 / 崩溃 / 优雅退出，全覆盖
+        if a is True:
+            return True
+    st = _lock_state()
+    if st is not None:
+        return st
+    if STATE.get("lock_seen"):
+        return False            # 启动时有锁、现在没锁 => Chrome 已清理并退出
+    return None
 
 
 def _pages_nonempty():
@@ -96,6 +130,8 @@ def launch():
 
     headless = os.environ.get("PR_HEADLESS", "0") == "1"
     STATE["pw"] = sync_playwright().start()
+    STATE["chrome_pid"] = None
+    STATE["lock_seen"] = False
     # 启动策略：
     # - 默认走 --no-sandbox + --test-type（WorkBuddy 进程树内 Chrome 原生沙箱必失败，
     #   --test-type 压掉"不受支持的命令行标记"提示栏，避免视口高度差异被启发式检测）
@@ -128,6 +164,16 @@ def launch():
     if ctx is None:
         raise last_err
     STATE["ctx"] = ctx
+    # 记录 Chrome 主进程 PID —— 这是后续判活的**主判据**。不能只依赖单例锁：
+    # 用户优雅退出（Cmd+Q）时 Chrome 会把锁文件删掉，此时锁判据会失效并退回
+    # ctx.pages，而 pages 在浏览器外部退出时是陈旧的（实测仍返回 1）。
+    for _ in range(40):                 # 最多等 10s，正常 <1s 即出现
+        pid = _lock_pid()
+        if pid:
+            STATE["chrome_pid"] = pid
+            STATE["lock_seen"] = True
+            break
+        time.sleep(0.25)
     return ctx
 
 

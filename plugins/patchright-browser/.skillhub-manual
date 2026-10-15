@@ -20,12 +20,18 @@ PATCHRIGHT-BROWSER — 人工改编说明
    - 「App 双击启动」一节改写为「macOS 启动优化（进阶，可选）」
 5. scripts/pr.py：
    - PROFILE 增加 PR_PROFILE 环境变量覆盖（默认值与原版逐字一致，不影响既有登录态）
-   - 新增 _lock_pid() / browser_alive() / _pages_nonempty() / _serving()：
-     修复「浏览器被强杀后服务永不退出、/status 假阳性」的 bug
-     （旧版信 ctx.pages / is_connected()，实测两者都不可信）
+   - 新增 _pid_alive() / _lock_pid() / _lock_state() / browser_alive() /
+     _pages_nonempty() / _serving()，修复「浏览器消失后服务永不退出、
+     /status 假阳性」的 bug：
+       · 旧版信 ctx.pages / is_connected()，实测两者都不可信（浏览器没了
+         仍报 1 页、仍回 True、事件不触发）
+       · 第一版修法只看 SingletonLock，漏了一类：用户优雅退出（Cmd+Q）时
+         Chrome 会自己删掉锁文件 ⇒ 判据失效、退回陈旧的 ctx.pages ⇒ 仍假阳性。
+         故再补：launch() 时记录 Chrome 主进程 PID 作为主判据 + lock_seen 兜底
    - op_status 与 run_ui 改用 _serving() 判活；/close 在浏览器已死时跳过
      ctx.close()/pw.stop()（对死浏览器调用可能卡住），直接退出
-6. references/api_reference.md：补 PR_PROFILE 行；/status 语义；判活实现要点；去专有语境
+6. references/api_reference.md：补 PR_PROFILE 行；/status 语义；分层判活要点；
+   `lsof -c Chrome` 恒为 0 的坑；去专有语境
 
 ⚠️ 上述 5 里的 pr.py 改动是【功能修复】而非仅去个人化 —— 本机技能
    ~/.workbuddy/skills/patchright-browser/scripts/pr.py 尚未同步这个修复，

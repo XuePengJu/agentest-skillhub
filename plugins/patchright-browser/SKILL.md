@@ -95,25 +95,28 @@ curl -s -X POST 127.0.0.1:9333/close
 
   于是旧版 `--ui` 的生命周期判定 `bool(ctx.pages)` 恒为真 → 服务永不退出。
 
-  **修法（已内置于 `pr.py` 的 `browser_alive()` / `_serving()`，`/status` 与 `--ui` 都改用它）**：判活改看 Chrome 的**进程单例文件**，不再信 Playwright：
+  **修法（已内置于 `pr.py` 的 `browser_alive()` / `_serving()`，`/status` 与 `--ui` 都改用它）**：判活改为**分层降级**，不再信 Playwright：
 
-  | 状态 | `profile/SingletonLock` | `os.kill(pid, 0)` |
+  | 序 | 判据 | 结论 |
   |---|---|---|
-  | 正常运行 | 符号链接 → `<hostname>-<pid>` | 成功 |
-  | 干净退出 | Chrome 自行删除该文件 | — |
-  | 被强杀 | **残留悬空符号链接** | `OSError` |
+  | 1 | `launch()` 时记录下的 Chrome 主进程 PID，`os.kill(pid, 0)` | 进程没了 => 死（强杀/崩溃/优雅退出全覆盖）|
+  | 2 | `profile/SingletonLock` → `<hostname>-<pid>` + 验活 | 锁在且活 => 活；锁在但 pid 已死 => 死（悬空链接）|
+  | 3 | 启动时锁存在过、现在没了 | => 死（Chrome 优雅退出会**自己删掉**锁文件）|
+  | 4 | 以上都不适用 | 返回 `None`，退回旧 `ctx.pages` 判定 |
 
-  判据缺失时（拿不到该文件）自动退回旧的 `ctx.pages` 判定，不会误判为"已死"。
+  **为什么必须记录 PID，而不能只看锁**（2026-10-16 补测）：用户**优雅退出**（Cmd+Q）时 Chrome 会把 `SingletonLock` **删掉**，于是判据 2 失效、`browser_alive()` 只能返回 `None`，一路退回 `ctx.pages` —— 而那也是**陈旧**的（明明浏览器没了照报 1 页）。结果 `/status` 依旧假阳性。判据 1 就是为了堵这个洞：**别依赖"锁存在"这个前提**。
 
-  **排查已在跑旧版服务的实例**：
+  **排查已在跑旧版服务的实例**（旧版指未含上述判据 1/3 的 `pr.py`）：
 
   ```bash
   lsof -nP -iTCP:9333 -sTCP:LISTEN    # 有监听
-  curl -s -m 5 127.0.0.1:9333/status  # 旧版恒回 running:true，不可信
-  ls -la <profile>/SingletonLock      # 悬空链接 => 浏览器早就死了
-  tail <技能目录>/serve.log           # 会看到驱动栈 + Node.js vX
-  kill <服务PID>                      # 处置：只能 kill（旧版连 /close 都可能卡住）
+  curl -s -m 5 127.0.0.1:9333/status  # 旧版可能恒回 running:true，不可信
+  ls -la <profile>/SingletonLock      # 悬空链接 => 被强杀；文件不存在 => 优雅退出过
+  lsof -nP 2>/dev/null | grep -F "<profile>"   # 无输出 => 浏览器真的不在了（最可靠）
+  kill <服务PID>                      # 处置：只能 kill
   ```
+
+  ⚠️ **别用 `lsof -c Chrome` 数 Chrome 进程**：macOS 上进程名是 `Google Chrome`，`lsof` 的 `-c` 按前 9 字符匹配，`-c Chrome` **恒返回 0**，会让人误判"浏览器已退出"（我踩过）。要数就用 `lsof -c "Google Ch"`，或直接查 profile 占用（更准）。
 
   **连带症状**：此时双击 `LSUIElement` 的 `.app` 会**毫无反应** —— 启动器单例检测误判「已在运行」直接退出，或（探测超时）交给 `pr.py`，而 `pr.py` 的端口探测发现端口被占同样直接退出。所以「双击没反应」先查这个，别急着怀疑启动器坏了。
 - **单线程阻塞**：服务是单线程 `HTTPServer`，一个慢请求（如 goto 等慢站）会堵住后续所有请求。curl 侧务必带 `-m`（超时），长导航用 `{"timeout":毫秒}` 收窄 Playwright 侧等待
