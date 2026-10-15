@@ -25,6 +25,57 @@ MAX_OUT = int(os.environ.get("PR_MAX_OUT", "4000"))
 
 STATE = {"pw": None, "ctx": None}
 
+
+def _lock_pid():
+    """读 profile 的进程单例文件，取出当时持有它的 Chrome 主进程 PID（拿不到返回 None）。"""
+    lock = os.path.join(PROFILE, "SingletonLock")
+    try:
+        if not os.path.islink(lock):
+            return None
+        return int(os.readlink(lock).rsplit("-", 1)[-1])
+    except (OSError, ValueError):
+        return None
+
+
+def browser_alive():
+    """浏览器是否真的还活着：True / False / None（本平台拿不到判据）。
+
+    实测（2026-10-16，双向验证过 kill 确实生效）：浏览器被强杀或用户彻底退出后，
+    ctx.pages 会返回**陈旧**的页面列表、ctx.browser.is_connected() 仍返回 True、
+    close / disconnected 事件也都不触发 —— 这三个官方信号全都不可信。后果是服务
+    永不退出、/status 恒报 running:true（假阳性），而任何真实操作会永久挂起。
+    故改看 Chrome 的进程单例文件：
+        正常运行  profile/SingletonLock -> "<hostname>-<pid>"，且该 pid 存活
+        干净退出  Chrome 自行删除该文件
+        被强杀    文件残留为悬空符号链接，pid 已不存在
+    """
+    if STATE.get("ctx") is None:
+        return False
+    pid = _lock_pid()
+    if pid is None:
+        return None
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def _pages_nonempty():
+    ctx = STATE.get("ctx")
+    try:
+        return bool(ctx.pages) if ctx is not None else False
+    except Exception:  # 浏览器已被 Cmd+Q 杀掉，访问 pages 会抛
+        return False
+
+
+def _serving():
+    """服务是否还有可用浏览器；判据缺失（None）时退回旧的 ctx.pages 判定。"""
+    if STATE.get("ctx") is None:
+        return False
+    alive = browser_alive()
+    return _pages_nonempty() if alive is None else alive
+
 # 恢复 Chrome 遮挡/后台节流：只剔除渲染相关的两个默认 flag，
 # 保留 --disable-background-timer-throttling 以免 Playwright 计时器漂移。
 UNTHROTTLE_ARGS = [
@@ -158,7 +209,7 @@ def op_tabs(p):
 
 def op_status(p):
     ctx = STATE["ctx"]
-    if not ctx:
+    if ctx is None or not _serving():
         return {"running": False}
     return {"running": True, "pages": [{"index": i, "url": pg.url} for i, pg in enumerate(ctx.pages)]}
 
@@ -190,8 +241,11 @@ class Handler(BaseHTTPRequestHandler):
         if route == "close":
             self._send(200, {"ok": True, "bye": True})
             try:
-                STATE["ctx"].close()
-                STATE["pw"].stop()
+                # 浏览器已死（False）时不要再去 close/stop：可能是死等的调用，
+                # 会把这个逃生出口也一起堵住。直接退出即可。
+                if browser_alive() is not False:
+                    STATE["ctx"].close()
+                    STATE["pw"].stop()
             except Exception:
                 pass
             os._exit(0)
@@ -216,12 +270,9 @@ def run_ui(server):
     print("ui mode: close last window to quit", flush=True)
     while True:
         server.handle_request()
-        ctx = STATE.get("ctx")
-        alive = True
-        try:
-            alive = bool(ctx.pages) if ctx is not None else False
-        except Exception:  # 浏览器已被 Cmd+Q 杀掉，访问 pages 会抛
-            alive = False
+        # 判活用 _serving()（浏览器进程是否还在），不要只看 ctx.pages：
+        # 浏览器被强杀后 pages 会一直返回陈旧值，只看它会导致服务永不退出。
+        alive = _serving() and _pages_nonempty()
         if not alive and time.time() >= grace_until:
             break
     try:

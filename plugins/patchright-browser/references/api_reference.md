@@ -14,7 +14,7 @@
 | `/extract` | `css`(必填), `attr`(取属性而非文本), `limit`(默认200) | `{count, total, items[]}` |
 | `/shot` | `full`(整页), `name`(文件名) | `{path}` 图片落 `/tmp` |
 | `/tabs` | `op`: `list`/`new`/`switch`/`close`, `index`, `url` | 见下 |
-| `/status` | 无（GET 或 POST 均可） | `{running, pages[]}` |
+| `/status` | 无（GET 或 POST 均可） | `{running, pages[]}`；**浏览器真的不在了会返回 `{running:false}`**（判活看 Chrome 进程单例，不信 `ctx.pages` / `is_connected()`，见下） |
 | `/close` | 无 | 关浏览器并退出进程 |
 
 ## tabs 细节
@@ -42,3 +42,5 @@
 - 不设置自定义 user_agent；不注入 init script（Patchright 补丁已覆盖）
 - `--no-sandbox` 在受限进程树内无法剔除（继承 macOS seatbelt 时 Chrome 原生沙箱初始化必失败），用 `--test-type` 压掉提示栏；验证方式：`outerHeight-innerHeight` 应为 ~87px（有提示栏 ~127px）
 - profile 固定于 `~/.workbuddy/skills/patchright-browser/profile/`（`PR_PROFILE` 可改），删除即重置身份
+- **判活不要用 Playwright 的 API**：浏览器被强杀/彻底退出后，`ctx.pages` 返回陈旧列表、`ctx.browser.is_connected()` 仍回 `True`、`close`/`disconnected` 事件都不触发（2026-10-16 实测）。`browser_alive()` 改读 `profile/SingletonLock -> "<hostname>-<pid>"` 并用 `os.kill(pid, 0)` 验活；拿不到该文件时返回 `None`，调用方（`_serving()`）退回 `ctx.pages` 判定
+- `/close` 在浏览器已死时会跳过 `ctx.close()`/`pw.stop()`（对死浏览器调用可能卡住），直接退出进程

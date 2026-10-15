@@ -18,9 +18,18 @@ PATCHRIGHT-BROWSER — 人工改编说明
    - python 解释器由「受管 venv 的绝对路径」改为 PY="${PR_PY:-python3}"
    - frontmatter 删除 metadata.runtime_python（含个人路径）
    - 「App 双击启动」一节改写为「macOS 启动优化（进阶，可选）」
-5. scripts/pr.py：PROFILE 增加 PR_PROFILE 环境变量覆盖
-   （默认值与原版逐字一致，不影响既有登录态）
-6. references/api_reference.md：补 PR_PROFILE 行；去专有语境
+5. scripts/pr.py：
+   - PROFILE 增加 PR_PROFILE 环境变量覆盖（默认值与原版逐字一致，不影响既有登录态）
+   - 新增 _lock_pid() / browser_alive() / _pages_nonempty() / _serving()：
+     修复「浏览器被强杀后服务永不退出、/status 假阳性」的 bug
+     （旧版信 ctx.pages / is_connected()，实测两者都不可信）
+   - op_status 与 run_ui 改用 _serving() 判活；/close 在浏览器已死时跳过
+     ctx.close()/pw.stop()（对死浏览器调用可能卡住），直接退出
+6. references/api_reference.md：补 PR_PROFILE 行；/status 语义；判活实现要点；去专有语境
+
+⚠️ 上述 5 里的 pr.py 改动是【功能修复】而非仅去个人化 —— 本机技能
+   ~/.workbuddy/skills/patchright-browser/scripts/pr.py 尚未同步这个修复，
+   同步后本地与发布版 pr.py 可保持一致（SKILL.md 仍有意不同，见上）。
 
 确需用本机原版覆盖时
 --------------------
