@@ -164,8 +164,30 @@ git add -A && git commit -m "feat: import weather-open-meteo" && git push
 导入后建议再自查一遍硬编码的个人路径与凭据：
 
 ```bash
-grep -rn "/Users/\|$HOME\|api[_-]key\|secret" plugins/<插件名>/
+# 注意：用 -E（macOS 自带的是 BSD grep，其 BRE 不支持 \| 或模式）
+grep -rnE '/Users/|/home/|api[_-]?key|secret|passwd' plugins/<插件名>/
 ```
+
+### ⚠️ 人工改编过的插件不会被覆盖
+
+自动剔除只能处理"垃圾文件和明显的数据目录"，**处理不了埋在正文里的个人路径**
+（比如某个技能的 `SKILL.md` 里写着自己的绝对路径、或启动脚本里写死了本机 home）。
+这类技能必须手工改编后再发布。
+
+为避免下次 `import_skill.py` 把手工成果**静默覆盖**回去，改编完成后放一个标记文件：
+
+```bash
+touch plugins/<插件名>/.skillhub-manual
+```
+
+之后导入该插件会被跳过：
+
+```
+! <插件名>: 已存在人工改编版本（含 .skillhub-manual），跳过以免覆盖。确需用本机原版覆盖请加 --force
+```
+
+确需覆盖时加 `--force`，但**覆盖后必须重做全部去个人化处理**。
+（实例见 `plugins/patchright-browser/.skillhub-manual`。）
 
 ## License
 

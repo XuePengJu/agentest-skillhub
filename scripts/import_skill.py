@@ -45,6 +45,10 @@ EXCLUDE_SUFFIXES = {".log", ".pyc", ".bak"}
 SLUG_RE = re.compile(r"^[A-Za-z0-9][-A-Za-z0-9._]*$")
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
+# 人工改编标记：仓库里某个插件被手工去个人化/改写过后放这个文件，
+# 再次导入时默认拒绝覆盖（否则本机技能里的绝对路径、个人数据会被原样搬回来）
+MANUAL_MARKER = ".skillhub-manual"
+
 
 def parse_frontmatter(text: str) -> dict:
     """极简 YAML frontmatter 解析：只取顶层的 key: value 标量。"""
@@ -134,7 +138,7 @@ def upsert_entry(market: dict, entry: dict) -> str:
     return "added"
 
 
-def import_one(slug: str, source_root: Path, version: str | None) -> bool:
+def import_one(slug: str, source_root: Path, version: str | None, force: bool = False) -> bool:
     if not SLUG_RE.match(slug):
         print(f"  ✗ {slug}: 名字不合法（须匹配 {SLUG_RE.pattern}）")
         return False
@@ -143,10 +147,16 @@ def import_one(slug: str, source_root: Path, version: str | None) -> bool:
         print(f"  ✗ {slug}: 未找到 {src / 'SKILL.md'}")
         return False
 
+    dst = PLUGINS_DIR / slug
+    if (dst / MANUAL_MARKER).exists() and not force:
+        print(f"  ! {slug}: 已存在人工改编版本（含 {MANUAL_MARKER}），跳过以免覆盖。"
+              f"确需用本机原版覆盖请加 --force")
+        return False
+
     meta = parse_frontmatter((src / "SKILL.md").read_text(encoding="utf-8"))
     resolved_version = version or meta.get("version") or "0.1.0"
 
-    copied = copy_skill(src, PLUGINS_DIR / slug)
+    copied = copy_skill(src, dst)
     plugin_meta = build_plugin_json(slug, meta, resolved_version)
     plugin_json = PLUGINS_DIR / slug / ".claude-plugin" / "plugin.json"
     plugin_json.parent.mkdir(parents=True, exist_ok=True)
@@ -181,6 +191,8 @@ def main() -> int:
     ap.add_argument("--list", action="store_true", help="列出来源目录下可导入的技能")
     ap.add_argument("--source", default=str(DEFAULT_SOURCE), help="技能来源目录")
     ap.add_argument("--version", default=None, help="强制指定版本号")
+    ap.add_argument("--force", action="store_true",
+                    help="即使插件含人工改编标记（.skillhub-manual）也用本机原版覆盖")
     args = ap.parse_args()
 
     source_root = Path(args.source).expanduser()
@@ -206,7 +218,7 @@ def main() -> int:
     print(f"来源：{source_root}")
     ok = 0
     for slug in targets:
-        if import_one(slug, source_root, args.version):
+        if import_one(slug, source_root, args.version, force=args.force):
             ok += 1
     print(f"\n完成：{ok}/{len(targets)} 个技能已导入。")
     if ok:

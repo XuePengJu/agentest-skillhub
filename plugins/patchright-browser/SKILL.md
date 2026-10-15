@@ -11,7 +11,7 @@ display_name_en: "Patchright Stealth Browser"
 
 Patchright = 打过反检测补丁的 Playwright（去 Runtime.enable 泄漏、去自动化标记）。本技能用常驻 HTTP 控制服务（默认 `127.0.0.1:9333`）+ curl 一行命令操作，输出精简省 token。
 
-**约定**：下文 `$SKILL_DIR` 指本 SKILL.md 所在目录（即技能根目录）。随附脚本一律用自身路径定位，不依赖安装位置。
+**约定**：下文 `$SKILL_DIR` 是**文档占位符、不是环境变量** —— 它指本 SKILL.md 所在目录（即技能根目录），执行命令时请替换为实际绝对路径或先 `export SKILL_DIR=<实际技能目录>`。随附脚本一律用自身路径定位，不依赖安装位置与当前工作目录。
 
 **平台**：核心链路（Patchright + 控制服务）跨平台；脚本示例用 `bash`/`curl`，macOS 与 Linux 均可。文中「macOS 启动优化」一节仅涉 macOS。
 
@@ -84,6 +84,15 @@ curl -s -X POST 127.0.0.1:9333/close
 
 - **打开网页极慢（nice=5 后台降级）**：见上文「macOS 启动优化」。诊断顺序：① 查 `pr.py`/Chrome 的 nice 是不是 5；② 若是 5 → 改用 launchd 拉起；③ 排除法（同 profile 副本 + 同参数另起一个实例，若秒开则证明是"实例被降级/状态异常"，而非 profile/参数/代理问题）
 - **窗口一闪即关 / 反复开关**：旧版单例检测用 `urllib` 探测 `127.0.0.1:9333`，在有全局 `http_proxy` 的环境会被代理劫持 → 永远误判"没在跑" → 真的另起一个浏览器，随后端口绑定失败又退出。已改为**裸 socket 探端口**（不走代理）+ 绑定失败时关闭刚起的浏览器。若再现，先查日志里是否有连续多次 `ui mode:` 且缺失 `already running`
+- **浏览器/驱动进程崩掉后，控制服务不会自愈、会永久卡死**（2026-10-16 实测）：Chrome 或 Node 驱动崩溃后，python 服务仍**占着端口继续监听**，`/status` 甚至还能返回 `{"running": true}`（读到的是陈旧的页面列表），但**任何真实操作（`goto` 等）会永久挂起** —— 服务是单线程的，这一个卡住的请求会把后续所有请求一起堵死，表现为「9333 端口在监听但完全不通」。此时 `curl -X POST /close` 也没用（服务收不到新请求）。**判断依据**：`<技能目录>/serve.log` 尾部有 Node 驱动崩溃栈（`ProtocolError: ... session closed` 之后跟 `Node.js vX`）。
+  ```bash
+  # 症状：端口在监听却无响应
+  lsof -nP -iTCP:9333 -sTCP:LISTEN          # 有监听
+  curl -s -m 5 127.0.0.1:9333/status        # 但拿不到响应（http_code=000）
+  # 处置：只能 kill 掉服务进程后重启（profile 在磁盘上，登录态不丢）
+  kill <服务PID>   # 可用 lsof -nP -iTCP:9333 -sTCP:LISTEN 取 PID
+  ```
+  **连带症状**：此时若用 `LSUIElement` 的 `.app` 启动器双击，会**毫无反应** —— 启动器的单例检测要么误判「已在运行」直接退出，要么（探测超时）交给 `pr.py`，而 `pr.py` 的端口探测发现端口被占也会直接退出。所以「双击没反应」先查这个，别急着怀疑启动器坏了。
 - **单线程阻塞**：服务是单线程 `HTTPServer`，一个慢请求（如 goto 等慢站）会堵住后续所有请求。curl 侧务必带 `-m`（超时），长导航用 `{"timeout":毫秒}` 收窄 Playwright 侧等待
 - **选择器过时**：不要凭记忆写 `#kw`/`#su` 这类旧版选择器（某搜索引擎新版首页输入框是 `#chat-textarea`，`#kw` 隐藏不可见导致 fill/click 超时）。先 `/eval` 用 `offsetParent!==null` 过滤出**可见**输入框/按钮，拿到真实选择器再 fill/click
 - **截图偶发空响应**：结果页大图首次 `/shot` 可能无响应（服务被上一请求余波卡住），带 `-m 20` 重试一次即可成功

@@ -1,0 +1,30 @@
+PATCHRIGHT-BROWSER — 人工改编说明
+==============================
+
+本插件与 ~/.workbuddy/skills/patchright-browser 的内容【有意不同】，
+请不要用 scripts/import_skill.py 直接覆盖（该目录存在此文件时，导入会默认跳过）。
+
+本机原版 → 发布版的差异
+-----------------------
+
+（本文刻意不写出真实个人路径字面量，以免污染上层的自查 grep）
+
+1. 剔除 profile/（287M，含 cookie 与登录态）
+2. 剔除 PatchrightBrowser.app（启动器内写死了本机绝对路径，且依赖
+   本机 ~/Library/LaunchAgents/ 的 launchd plist，别人装了必坏）
+3. 剔除 nohup.out / serve*.log / launcher.pre-launchd.bak / .DS_Store
+4. SKILL.md：
+   - 调用路径由「本机绝对路径」改为 $SKILL_DIR 占位符
+   - python 解释器由「受管 venv 的绝对路径」改为 PY="${PR_PY:-python3}"
+   - frontmatter 删除 metadata.runtime_python（含个人路径）
+   - 「App 双击启动」一节改写为「macOS 启动优化（进阶，可选）」
+5. scripts/pr.py：PROFILE 增加 PR_PROFILE 环境变量覆盖
+   （默认值与原版逐字一致，不影响既有登录态）
+6. references/api_reference.md：补 PR_PROFILE 行；去专有语境
+
+确需用本机原版覆盖时
+--------------------
+
+    python3 scripts/import_skill.py patchright-browser --force
+
+覆盖后必须重新做上述 1-6，否则会把个人路径与运行态数据发到公开仓库。
