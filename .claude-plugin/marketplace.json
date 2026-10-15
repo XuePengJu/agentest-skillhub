@@ -7,6 +7,29 @@
   },
   "plugins": [
     {
+      "name": "library-port",
+      "description": "把 WorkBuddy 资料库里的网页页面和它绑定的数据表整套导出成一个 zip 迁移包，或在另一个 WorkBuddy 账号 / 另一台电脑上把这个 zip 原样恢复出来，并重新建立页面与数据表的绑定。当用户提到资料库搬家、导出资料库、备份资料库页面、迁移看板/工作台/管理台给别人、打包资料库给朋友、换个账号用同一个页面、复制这个页面到别的资料库、复制资料库里的节点、导入迁移包、把 zip 还原到资料库时应使用本技能。",
+      "version": "1.0.0",
+      "source": "./plugins/library-port",
+      "category": "data-migration",
+      "keywords": [
+        "library",
+        "workbuddy",
+        "migration",
+        "export",
+        "import",
+        "backup",
+        "zip"
+      ],
+      "author": {
+        "name": "xuepengju",
+        "url": "https://agentest.vip"
+      },
+      "homepage": "https://agentest.vip",
+      "repository": "https://github.com/XuePengJu/agentest-skillhub",
+      "license": "MIT"
+    },
+    {
       "name": "patchright-browser",
       "description": "反检测浏览器操作技能（Patchright 驱动）。当普通抓取遇到 Cloudflare/DataDome 等风控墙、强反爬站点（小红书/闲鱼等敏感操作）、需要隐身身份隔离于日常浏览器，或需要渲染/点击/登录态时使用。本技能通过常驻控制服务暴露精简 CLI，token 消耗远低于 MCP 方案。日常搜索、读静态页优先 WebFetch/curl，不要用本技能。",
       "version": "1.0.0",

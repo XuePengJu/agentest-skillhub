@@ -121,6 +121,7 @@ agentest-skillhub/
 
 | 技能 | 版本 | 说明 |
 | --- | --- | --- |
+| [`library-port`](./plugins/library-port) | 1.0.0 | 资料库搬家：把「网页页面 + 绑定的数据表」整套导出成 zip，在另一个账号/电脑上原样还原并重建绑定 |
 | [`patchright-browser`](./plugins/patchright-browser) | 1.0.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP |
 
 ## 添加一个新技能
