@@ -122,6 +122,7 @@ agentest-skillhub/
 | 技能 | 版本 | 说明 |
 | --- | --- | --- |
 | [`hot-news-summary`](./plugins/hot-news-summary) | 2.0.0 | 聚合 8 大平台热榜，结构化评分筛 Top10，生成三层洞察点评 |
+| [`patchright-browser`](./plugins/patchright-browser) | 1.0.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP |
 
 ## 添加一个新技能
 
@@ -146,6 +147,24 @@ python3 scripts/import_skill.py nuwa-skill --version 1.2.0
 
 ```bash
 git add -A && git commit -m "feat: import weather-open-meteo" && git push
+```
+
+### 导入时会自动剔除什么
+
+避免把本机运行态或个人数据发到公开仓库，导入时**不会**复制以下内容：
+
+| 排除项 | 原因 |
+| --- | --- |
+| `profile/` | 浏览器用户数据目录，**含 cookie 与登录态** |
+| `*.app/` | macOS 应用包：体积大、内含机器相关绝对路径与代码签名 |
+| `nohup.out`、`*.log` | 运行日志 |
+| `*.bak`、`*.pyc`、`__pycache__/` | 备份与编译产物 |
+| `.DS_Store`、`_skillhub_meta.json`、`_icon.svg`、`workbuddy.json`、`node_modules/` | 本机元数据与依赖 |
+
+导入后建议再自查一遍硬编码的个人路径与凭据：
+
+```bash
+grep -rn "/Users/\|$HOME\|api[_-]key\|secret" plugins/<插件名>/
 ```
 
 ## License

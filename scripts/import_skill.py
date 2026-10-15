@@ -65,6 +65,9 @@ def parse_frontmatter(text: str) -> dict:
 
 
 def is_excluded(path: Path) -> bool:
+    # macOS 应用包（*.app）：体积大、内含机器相关的绝对路径与代码签名，不适合发布
+    if any(part.endswith(".app") for part in path.parts):
+        return True
     if path.name in EXCLUDE_NAMES:
         return True
     if path.suffix in EXCLUDE_SUFFIXES:
@@ -121,6 +124,9 @@ def upsert_entry(market: dict, entry: dict) -> str:
     plugins = market.setdefault("plugins", [])
     for i, existing in enumerate(plugins):
         if existing.get("name") == entry["name"]:
+            # 保留人工补充的字段（category / keywords / description_en 等），避免重复导入时被冲掉
+            for key, value in existing.items():
+                entry.setdefault(key, value)
             plugins[i] = entry
             return "updated"
     plugins.append(entry)
