@@ -5,3 +5,5 @@ __pycache__/
 nohup.out
 .idea/
 .vscode/
+
+*/.skillhub-manual

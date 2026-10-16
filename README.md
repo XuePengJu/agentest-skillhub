@@ -36,7 +36,7 @@ codebuddy plugin validate ./agentest-skillhub     # 校验清单
 
 ## 更新
 
-推送到 `main` 后，使用者执行：
+推送到 `master` 后，使用者执行：
 
 ```bash
 codebuddy plugin marketplace update agentest-skillhub
