@@ -106,6 +106,11 @@ agentest-skillhub/
 │   └── <插件名>/
 │       ├── .claude-plugin/
 │       │   └── plugin.json       # 插件清单：name / version / description
+│       ├── ai.workbuddy/
+│       │   └── assets/
+│       │       └── icon.svg      # 插件图标（可选，见「关于图标」）
+│       ├── assets/
+│       │   └── icon.svg          # 同上，兼容另一种图标解析路径
 │       ├── SKILL.md              # 技能主体（frontmatter 含 name、description）
 │       ├── references/           # 参考资料（可选）
 │       └── scripts/              # 随技能分发的脚本（可选）
@@ -178,7 +183,8 @@ git add -A && git commit -m "feat: import weather-open-meteo" && git push
 | `*.app/` | macOS 应用包：体积大、内含机器相关绝对路径与代码签名 |
 | `nohup.out`、`*.log` | 运行日志 |
 | `*.bak`、`*.pyc`、`__pycache__/` | 备份与编译产物 |
-| `.DS_Store`、`_skillhub_meta.json`、`_icon.svg`、`workbuddy.json`、`node_modules/` | 本机元数据与依赖 |
+| `.DS_Store`、`_skillhub_meta.json`、`workbuddy.json`、`node_modules/` | 本机元数据与依赖 |
+| `_icon.*`（任意扩展名，即 `_icon.svg` / `.png` / `.jpg` …） | **商店图标缓存**，不是技能自己的资产，见「关于图标」 |
 
 导入后建议再自查一遍硬编码的个人路径与凭据：
 
@@ -239,6 +245,38 @@ touch plugins/<插件名>/.skillhub-manual
    `Playwright`）由使用者自行安装，各自遵循其原始许可，详见 `NOTICE`。
 
 5. **无担保与无支持承诺**：维护者不承诺提供技术支持、更新或问题修复。
+
+## 关于图标
+
+技能目录里的 `_icon.svg` / `_icon.png` **不是技能作者放进去的文件** —— 别被它骗了。
+
+它是 WorkBuddy 客户端从技能商店 **CDN 下载下来的缓存**：作者上架到商店时在后台传封面图，
+客户端安装技能时把图存进技能目录，并在 `_skillhub_meta.json` 里记下三个字段：
+
+```json
+{
+  "iconSource": "https://openplatform-cdn.codebuddy.cn/public/.../xxx.svg",
+  "iconLocalPath": "<技能目录>/_icon.svg",
+  "iconDownloadedFrom": "<同一个 CDN 地址>"
+}
+```
+
+`iconSource` 是 http 地址时客户端才会去下载；**手动往技能目录丢一个 `_icon.png` 不会被读取**。
+所以本仓库把它列为排除项：以 `_icon.` 开头的文件一律不导入。
+
+本仓库的插件图标走**另一条路** —— 插件包里的资源文件，WorkBuddy 按约定路径解析，
+图标扩展名只认 `.svg` 和 `.png`（官方连接器插件 feishu / notion / qq-mail 都是这么放的）：
+
+```
+<插件>/ai.workbuddy/assets/icon.svg
+```
+
+为兼容另一种解析路径（以插件根为基准目录），同一份图在 `<插件>/assets/icon.svg` 也放一份。
+两处内容需保持一致，改图时记得一起改。
+
+> 说明：通用插件市场（`codebuddy-plugins-official` 等）里的插件目前**都没带图标**，
+> 上面这个约定是从 WorkBuddy 源码与官方连接器插件里读出来的，没有先例可对照 ——
+> 实际是否显示、显示成什么样，以本机插件面板为准。
 
 ## License
 

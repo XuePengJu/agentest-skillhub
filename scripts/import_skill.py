@@ -39,7 +39,6 @@ AUTHOR = {"name": "xuepengju", "url": HOMEPAGE}
 EXCLUDE_NAMES = {
     ".DS_Store",
     "_skillhub_meta.json",
-    "_icon.svg",
     "nohup.out",
     "workbuddy.json",
     "profile",
@@ -47,6 +46,10 @@ EXCLUDE_NAMES = {
     "__pycache__",
 }
 EXCLUDE_SUFFIXES = {".log", ".pyc", ".bak"}
+# 商店图标缓存：_icon.svg / _icon.png / _icon.jpg …
+# 【不是技能自己的资产，是客户端从商店 CDN 下载的缓存】—— 见 README「关于图标」。
+# 所以按前缀排除，而不是只排 _icon.svg（那会漏掉 .png/.jpg）。
+EXCLUDE_PREFIXES = ("_icon.",)
 
 SLUG_RE = re.compile(r"^[A-Za-z0-9][-A-Za-z0-9._]*$")
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -97,6 +100,8 @@ def is_excluded(path: Path) -> bool:
     if path.name in EXCLUDE_NAMES:
         return True
     if path.suffix in EXCLUDE_SUFFIXES:
+        return True
+    if path.name.startswith(EXCLUDE_PREFIXES):
         return True
     return any(part in EXCLUDE_NAMES for part in path.parts)
 
