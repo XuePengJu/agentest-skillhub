@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 xuepengju (https://agentest.vip)
+# SPDX-License-Identifier: Apache-2.0
 """patchright-browser 自检：依赖、服务、浏览器、反检测基础面一次验完。
 
 用法：python3 selftest.py [--with-server]   # --with-server 会临时拉起服务做端到端验证

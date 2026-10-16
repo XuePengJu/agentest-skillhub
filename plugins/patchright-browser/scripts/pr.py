@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 xuepengju (https://agentest.vip)
+# SPDX-License-Identifier: Apache-2.0
 """patchright-browser 常驻控制服务（Patchright 驱动，反检测）
 
 架构：单线程 HTTPServer + Patchright sync API（同线程执行，规避 greenlet 线程限制）。

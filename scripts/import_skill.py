@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 xuepengju (https://agentest.vip)
+# SPDX-License-Identifier: Apache-2.0
 """把本机 WorkBuddy 技能导入 agentest-skillhub，成为一个可发布的插件。
 
 用法：
