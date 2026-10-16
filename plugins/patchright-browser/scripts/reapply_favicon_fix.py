@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 xuepengju (https://agentest.vip)
+# Copyright (c) 2026 xuepengju — https://agentest.vip
 # SPDX-License-Identifier: Apache-2.0
 """重新给 patchright 驱动打「放行 favicon 请求」补丁（升级 patchright 后必须重跑）。
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 xuepengju (https://agentest.vip)
+# Copyright (c) 2026 xuepengju — https://agentest.vip
 # SPDX-License-Identifier: Apache-2.0
 """patchright-browser 常驻控制服务（Patchright 驱动，反检测）
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2026 xuepengju (https://agentest.vip)
+# Copyright (c) 2026 xuepengju — https://agentest.vip
 # SPDX-License-Identifier: Apache-2.0
 """export_bundle.py —— 把 WorkBuddy 资料库里的页面 + 数据表导出成一个可迁移的 zip。
 

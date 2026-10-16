@@ -285,7 +285,7 @@ touch plugins/<插件名>/.skillhub-manual
 本项目采用 **Apache License 2.0**，全文见 [`LICENSE`](./LICENSE)，第三方组件声明见 [`NOTICE`](./NOTICE)。
 
 ```
-Copyright 2026 xuepengju (https://agentest.vip)
+Copyright (c) 2026 xuepengju — https://agentest.vip
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
