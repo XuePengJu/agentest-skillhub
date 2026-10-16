@@ -60,6 +60,10 @@ codebuddy plugin marketplace update agentest-skillhub
 > 选 `.claude-plugin` 而不是 `.codebuddy-plugin` 正是为了这一层兼容 —— WorkBuddy 源码里
 > 这三种目录名都认，而 Claude Code 只认 `.claude-plugin`。
 
+> ⚠️ **兼容例外**：`workbuddy-library-port` 是唯一一个**仅 WorkBuddy 可用**的插件 —— 它依赖
+> WorkBuddy 内置的资料库服务端 API 与宿主鉴权通道，装到 Claude Code / Cursor / Copilot 等
+> 其它工具里无法运行（脚本会报「未找到 WorkBuddy 内置 library 技能目录」）。其余插件均可跨工具使用。
+
 ### 第二层：技能体（`SKILL.md`）
 
 `SKILL.md` 是开放标准（Agent Skills），**40+ 工具**都读：Cursor、GitHub Copilot、
@@ -126,7 +130,7 @@ agentest-skillhub/
 
 | 技能 | 版本 | 说明 |
 | --- | --- | --- |
-| [`library-port`](./plugins/library-port) | 1.0.0 | 资料库搬家：把「网页页面 + 绑定的数据表」整套导出成 zip，在另一个账号/电脑上原样还原并重建绑定 |
+| [`workbuddy-library-port`](./plugins/workbuddy-library-port) | 1.0.0 | **仅 WorkBuddy 可用** · 资料库搬家：把「网页页面 + 绑定的数据表」整套导出成 zip，在另一个账号/电脑上原样还原并重建绑定 |
 | [`patchright-browser`](./plugins/patchright-browser) | 1.0.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP |
 
 ## 添加一个新技能
@@ -145,7 +149,7 @@ python3 scripts/import_skill.py BT-Node-Project-Deploy kb-archive-audit
 python3 scripts/import_skill.py --all
 
 # 指定版本号
-python3 scripts/import_skill.py library-port --version 1.0.0
+python3 scripts/import_skill.py workbuddy-library-port --version 1.0.0
 ```
 
 导入后提交发布：

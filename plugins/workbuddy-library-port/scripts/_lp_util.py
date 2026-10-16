@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 xuepengju — https://agentest.vip
 # SPDX-License-Identifier: Apache-2.0
-"""library-port 共用工具：定位内置 library 技能目录、调用其脚本、记录类型转换。"""
+"""workbuddy-library-port 共用工具：定位内置 library 技能目录、调用其脚本、记录类型转换。"""
 
 from __future__ import annotations
 

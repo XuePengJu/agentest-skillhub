@@ -1,16 +1,23 @@
 ---
-name: library-port
-description: 把 WorkBuddy 资料库里的网页页面和它绑定的数据表整套导出成一个 zip 迁移包，或在另一个 WorkBuddy 账号 / 另一台电脑上把这个 zip 原样恢复出来，并重新建立页面与数据表的绑定。当用户提到资料库搬家、导出资料库、备份资料库页面、迁移看板/工作台/管理台给别人、打包资料库给朋友、换个账号用同一个页面、复制这个页面到别的资料库、复制资料库里的节点、导入迁移包、把 zip 还原到资料库时应使用本技能。
+name: workbuddy-library-port
+description: 【仅 WorkBuddy 可用】把 WorkBuddy 资料库里的网页页面和它绑定的数据表整套导出成一个 zip 迁移包，或在另一个 WorkBuddy 账号 / 另一台电脑上把这个 zip 原样恢复出来，并重新建立页面与数据表的绑定。本技能依赖 WorkBuddy 内置的资料库服务端 API，只能在已登录的 WorkBuddy 客户端内运行，其它工具（Claude Code / Cursor / Copilot 等）装了无法使用。当用户提到资料库搬家、导出资料库、备份资料库页面、迁移看板/工作台/管理台给别人、打包资料库给朋友、换个账号用同一个页面、复制这个页面到别的资料库、复制资料库里的节点、导入迁移包、把 zip 还原到资料库时应使用本技能。
 version: 1.0.0
 license: Apache-2.0
-display_name: "资料库迁移"
-display_name_en: "Library Migration"
+display_name: "资料库迁移（仅 WorkBuddy）"
+display_name_en: "Library Migration (WorkBuddy only)"
 agent_created: true
 ---
 
-# library-port · 资料库页面迁移
+# workbuddy-library-port · 资料库页面迁移
 
 把资料库里的「页面 + 绑定的数据表」整套搬家的能力，分导出成 zip 与从 zip 恢复两步。
+
+## 运行前提（必读）
+
+本技能**只能在 WorkBuddy 客户端内使用**。导出与导入都依赖 WorkBuddy 内置的资料库服务端 API（内置 `library` 技能），并通过宿主 IPC 通道完成鉴权与写入，没有 WorkBuddy 会话的环境无法调用，脚本会返回 `未找到 WorkBuddy 内置 library 技能目录`。
+
+- ✅ 可用：WorkBuddy（已登录），目标账号同为已登录的 WorkBuddy 账号
+- ❌ 不可用：Claude Code、Cursor、GitHub Copilot、Gemini CLI 等其它工具 —— 即使按本市场通用的方式安装本技能，脚本也会因缺少资料库后端而失败
 
 ## 能力边界
 
@@ -22,7 +29,7 @@ agent_created: true
 
 ## Before starting
 
-两个脚本会自行定位 WorkBuddy 内置的 library 技能目录（环境变量 → 固定安装路径 → 常见根目录搜索），无需手工配置路径。若定位失败会返回 `{"error":"未找到..."}`，此时需确认本机已安装并登录 WorkBuddy。
+两个脚本会自行定位 WorkBuddy 内置的 library 技能目录（环境变量 → 固定安装路径 → 常见根目录搜索），无需手工配置路径。若定位失败会返回 `{"error":"未找到..."}`，此时需确认本机已安装并登录 WorkBuddy（本技能仅 WorkBuddy 可用，见「运行前提」）。
 
 ## Step 1 · 导出
 
