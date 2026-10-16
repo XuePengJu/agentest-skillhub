@@ -189,6 +189,12 @@ def import_one(
 
     meta = parse_frontmatter((src / "SKILL.md").read_text(encoding="utf-8"))
     resolved_version = version or meta.get("version") or "0.1.0"
+    if version and meta.get("version") and version != meta["version"]:
+        print(f"      ⚠ SKILL.md 写的是 v{meta['version']}，本次被 --version 覆盖为 v{version}，"
+              f"两处已不一致，建议同步 SKILL.md 的 version")
+    elif not meta.get("version"):
+        print(f"      · SKILL.md frontmatter 没有 version（商店生态 82% 都写），"
+              f"本次按 v{resolved_version} 登记，建议在 SKILL.md 里补一行 version 保持三处一致")
 
     copied = copy_skill(src, dst)
     plugin_meta = build_plugin_json(slug, meta, resolved_version)

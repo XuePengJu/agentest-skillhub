@@ -11,6 +11,13 @@
       "description": "把 WorkBuddy 资料库里的网页页面和它绑定的数据表整套导出成一个 zip 迁移包，或在另一个 WorkBuddy 账号 / 另一台电脑上把这个 zip 原样恢复出来，并重新建立页面与数据表的绑定。当用户提到资料库搬家、导出资料库、备份资料库页面、迁移看板/工作台/管理台给别人、打包资料库给朋友、换个账号用同一个页面、复制这个页面到别的资料库、复制资料库里的节点、导入迁移包、把 zip 还原到资料库时应使用本技能。",
       "version": "1.0.0",
       "source": "./plugins/library-port",
+      "author": {
+        "name": "xuepengju",
+        "url": "https://agentest.vip"
+      },
+      "homepage": "https://agentest.vip",
+      "repository": "https://github.com/XuePengJu/agentest-skillhub",
+      "license": "MIT",
       "category": "data-migration",
       "keywords": [
         "library",
@@ -20,14 +27,7 @@
         "import",
         "backup",
         "zip"
-      ],
-      "author": {
-        "name": "xuepengju",
-        "url": "https://agentest.vip"
-      },
-      "homepage": "https://agentest.vip",
-      "repository": "https://github.com/XuePengJu/agentest-skillhub",
-      "license": "MIT"
+      ]
     },
     {
       "name": "patchright-browser",
