@@ -212,7 +212,9 @@ touch plugins/<插件名>/.skillhub-manual
 ```
 
 确需覆盖时加 `--force`，但**覆盖后必须重做全部去个人化处理**。
-（实例见 `plugins/patchright-browser/.skillhub-manual`。）
+
+> 说明：`.skillhub-manual` 是维护者**本机**的工作标记，不随本仓库分发；仓库根
+> 已用 `.gitignore` 忽略它，因此你在 clone 下来的仓库里看不到该文件。
 
 ## 收录原则
 

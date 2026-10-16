@@ -6,4 +6,5 @@ nohup.out
 .idea/
 .vscode/
 
-*/.skillhub-manual
+**/.skillhub-manual
+.workbuddy/
