@@ -129,7 +129,7 @@ def build_plugin_json(slug: str, meta: dict, version: str) -> dict:
         "author": AUTHOR,
         "homepage": HOMEPAGE,
         "repository": REPO_URL,
-        "license": meta.get("license", "MIT"),
+        "license": meta.get("license", "Apache-2.0"),
     }
 
 

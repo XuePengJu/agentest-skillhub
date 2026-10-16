@@ -1,0 +1,26 @@
+agentest-skillhub
+Copyright 2026 xuepengju (https://agentest.vip)
+
+This product includes software developed at
+agentest-skillhub (https://github.com/XuePengJu/agentest-skillhub).
+
+----------------------------------------------------------------------
+第三方组件说明
+----------------------------------------------------------------------
+
+本仓库收录的插件均为维护者原创作品，不含第三方技能包。
+
+以下为运行期依赖（未随本仓库分发，由使用者自行安装），
+各自遵循其原始许可：
+
+- patchright（plugins/patchright-browser 的运行期依赖）
+  Copyright Vinyzu
+  Licensed under the Apache License, Version 2.0
+  https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python
+
+- Playwright（patchright 的上游项目）
+  Copyright Microsoft Corporation
+  Licensed under the Apache License, Version 2.0
+  https://github.com/microsoft/playwright
+
+如需分发上述依赖，请自行遵守其许可条款。

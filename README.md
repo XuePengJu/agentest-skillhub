@@ -151,6 +151,8 @@ git add -A && git commit -m "feat: import weather-open-meteo" && git push
 
 ### ⚠️ 只发布你自己的作品
 
+> 这是本市场的**收录条款**（见上「收录原则」），导入脚本只是它的技术兜底。
+
 本机 `~/.workbuddy/skills/` 里的技能**不都是你的作品**：从技能商店装进来的第三方技能，
 目录里会带一个 `_skillhub_meta.json`。把它收录进本市场并署上自己的名字、代原作者声明
 许可，等于**转载他人作品 + 改署名**，不能这么发。
@@ -206,6 +208,53 @@ touch plugins/<插件名>/.skillhub-manual
 确需覆盖时加 `--force`，但**覆盖后必须重做全部去个人化处理**。
 （实例见 `plugins/patchright-browser/.skillhub-manual`。）
 
+## 收录原则
+
+**本市场只收录维护者本人原创的技能。** 这不是建议，是本市场的收录条款：
+
+- 收录进 `plugins/` 的每个插件，其代码与文档都由维护者创作，版权归维护者所有。
+- **不接受**把他人作品（含从技能商店安装的第三方技能）重新署名后收录。这样做构成
+  **转载 + 改署名**，与开源协议无关，是独立的侵权行为。
+- 技术上有 `scripts/import_skill.py` 的 `_skillhub_meta.json` 检测作拦截，但这只是
+  工具兜底；**真正的约束是这条原则本身**。
+- 若确需收录第三方作品，必须保留其原始署名与许可，并在该插件的 `SKILL.md` 中如实标注来源。
+
+## 使用须知与免责声明
+
+**本仓库按「现状」提供，请在使用前阅读本节。**
+
+1. **软件质量免责**：本仓库及其全部插件按 **AS-IS** 提供，不附带任何明示或暗示的担保，
+   包括但不限于对适销性、特定用途适用性、无侵权的担保。因使用本软件产生的任何损失，
+   作者与贡献者不承担责任（详见 `LICENSE` 第 7、8 节）。
+
+2. **用途合规责任归使用者**：本软件仅提供技术能力，**不对使用者的具体用途作任何担保或背书**。
+   使用者须自行确保其使用行为符合所在地法律法规及目标网站/服务的使用条款。
+   例如，`patchright-browser` 是浏览器自动化工具，使用者不得将其用于违反法律、
+   侵犯他人权益或规避合法访问控制的场景。**由此产生的一切法律责任由使用者自行承担。**
+
+3. **数据版权归原权利人**：使用者通过本软件获取、抓取或处理的任何数据，
+   其版权与相关权利归原权利人所有，与本仓库的软件许可无关。
+
+4. **不含第三方技能**：本仓库不收录第三方技能包。运行期依赖（如 `patchright`、
+   `Playwright`）由使用者自行安装，各自遵循其原始许可，详见 `NOTICE`。
+
+5. **无担保与无支持承诺**：维护者不承诺提供技术支持、更新或问题修复。
+
 ## License
 
-MIT
+本项目采用 **Apache License 2.0**，全文见 [`LICENSE`](./LICENSE)，第三方组件声明见 [`NOTICE`](./NOTICE)。
+
+```
+Copyright 2026 xuepengju (https://agentest.vip)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+```
+
+**为什么是 Apache-2.0 而不是 MIT？** 两者在自由度上完全等价（都可商用、可闭源、可修改、
+可再分发），Apache-2.0 额外提供**明确的专利授权**与**专利报复条款**，对企业使用者更友好。
+代价是分发时需携带 `NOTICE` 文件，且修改过的文件需声明改动（`LICENSE` 第 4 节）。
+
