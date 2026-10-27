@@ -14,8 +14,29 @@
 | `/extract` | `css`(必填), `attr`(取属性而非文本), `limit`(默认200) | `{count, total, items[]}` |
 | `/shot` | `full`(整页), `name`(文件名) | `{path}` 图片落 `/tmp` |
 | `/tabs` | `op`: `list`/`new`/`switch`/`close`, `index`, `url` | 见下 |
+| `/cookies` | `url` 或 `urls`(按目标 URL 精确过滤), `domain`(全 jar 子串匹配), `name`, `format`: `json`/`header`/`netscape`, `save`(落盘路径), `limit`, `inline`(true 才回内容) | 见下「cookie 细节」 |
+| `/cookies/set` | `cookies`(Playwright 数组) 或 `header`+`url` | `{ok, count}` |
+| `/cookies/clear` | `name` / `domain` / `path` 任一，或 `all:true`（**无过滤条件时必须显式 all，否则报错**） | `{ok, cleared_by}` |
+| `/storage` | `save`, `indexed_db`(bool) | `{path, cookies, origins[], bytes}` |
 | `/status` | 无（GET 或 POST 均可） | `{running, pages[]}`；**浏览器真的不在了会返回 `{running:false}`**（判活看 Chrome 进程单例，不信 `ctx.pages` / `is_connected()`，见下） |
 | `/close` | 无 | 关浏览器并退出进程 |
+
+## cookie 细节
+
+**为什么不用 `/eval document.cookie`**：它只能读到**当前页面 origin** 且**非 HttpOnly** 的 cookie，且返回裸字符串、无 domain/path/expires 元数据。`/cookies` 走 CDP 的 `Storage.getCookies`，在浏览器进程层执行，**绕开页面 JS 沙箱** ⇒ 全部域名 + HttpOnly 都能拿到，元数据完整。
+
+**默认只回摘要、值落盘**（`/tmp/pr-cookies-<epoch>.<ext>`，权限 `0600`）：cookie 动辄数 KB，`PR_MAX_OUT` 截断会把 JSON 从中间切断，调用方拿到坏数据却不报错。要看值就 `Read` 返回的 `path`，或显式 `inline:true`。
+
+| `format` | 产物 | 适用 |
+|---|---|---|
+| `json`（默认） | Playwright cookie 数组（name/value/domain/path/expires/httpOnly/secure/sameSite） | 程序处理、回灌 `/cookies/set` |
+| `header` | `a=1; b=2` 单行 | 直接 `curl -H "Cookie: ..."` |
+| `netscape` | Netscape cookie 文件，httpOnly 用 `#HttpOnly_` 前缀表达 | `curl -b <file>` / `yt-dlp --cookies` / requests |
+
+- `PR_COOKIE_DIR` 可改落盘目录；`save` 显式指定优先
+- **写入技能目录会被硬拦报错**：技能目录会被 `scripts/import_skill.py` 整体打包进公开仓库（排除列表只有 `profile` / `*.app` / `_icon.*`），把明文 cookie 写进去等于公开发布凭证
+- `/cookies/set` 里 `url` 与 `domain`/`path` **不能同时出现**（Playwright 限制），服务端会提前拦下给可读错误
+- `/cookies/clear` 不传任何过滤条件时报错拒绝，防止手滑清光全部登录态
 
 ## tabs 细节
 
@@ -32,6 +53,7 @@
 | `PR_HEADLESS` | 0 | 1=无头（过检率下降） |
 | `PR_MAX_OUT` | 4000 | 响应截断阈值（字符） |
 | `PR_SHOT_DIR` | /tmp | 截图落盘目录 |
+| `PR_COOKIE_DIR` | /tmp | cookie / storage_state 落盘目录（`save` 显式指定优先；写入技能目录会被拒绝） |
 | `PR_PROFILE` | `~/.workbuddy/skills/patchright-browser/profile` | 浏览器用户数据目录（登录态所在，删即重置身份） |
 | `PR_CLEAN` | 0 | 1=先尝试剔除 `--no-sandbox` 的干净启动（仅限用户终端直跑；受限进程树内 Chrome 原生沙箱必失败会回退） |
 

@@ -131,7 +131,7 @@ agentest-skillhub/
 | 技能 | 版本 | 说明 |
 | --- | --- | --- |
 | [`workbuddy-library-port`](./plugins/workbuddy-library-port) | 1.0.0 | **仅 WorkBuddy 可用** · 资料库搬家：把「网页页面 + 绑定的数据表」整套导出成 zip，在另一个账号/电脑上原样还原并重建绑定 |
-| [`patchright-browser`](./plugins/patchright-browser) | 1.0.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP |
+| [`patchright-browser`](./plugins/patchright-browser) | 1.1.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP。含 cookie / 登录态导出（CDP 层，可读 HttpOnly） |
 
 ## 添加一个新技能
 

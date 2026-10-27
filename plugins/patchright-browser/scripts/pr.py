@@ -15,6 +15,7 @@
 import json
 import os
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PORT = int(os.environ.get("PR_PORT", "9333"))
@@ -23,6 +24,10 @@ PROFILE = os.path.expanduser(
     os.environ.get("PR_PROFILE") or "~/.workbuddy/skills/patchright-browser/profile"
 )
 SHOT_DIR = os.environ.get("PR_SHOT_DIR", "/tmp")
+# cookie / storage_state 落盘目录。**故意不默认落在技能目录内**：技能目录可能被整体
+# 打包发布到公开仓库，而 cookie 是明文登录凭证。见 _cookie_path() 的硬拦。
+COOKIE_DIR = os.environ.get("PR_COOKIE_DIR", "/tmp")
+SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAX_OUT = int(os.environ.get("PR_MAX_OUT", "4000"))
 
 STATE = {"pw": None, "ctx": None, "chrome_pid": None, "lock_seen": False}
@@ -255,6 +260,161 @@ def op_tabs(p):
     return {"pages": [{"index": i, "url": pg.url, "title": pg.title()} for i, pg in enumerate(ctx.pages)]}
 
 
+def _cookie_path(p, kind):
+    """cookie 落盘路径。默认 /tmp，PR_COOKIE_DIR 可改，p["save"] 显式指定优先。
+
+    硬拦写入技能目录：技能目录会被 scripts/import_skill.py 整体打包进**公开仓库**
+    （排除列表只有 profile / *.app / _icon.*），把明文 cookie 写进去等于公开发布凭证。
+    """
+    ext = "json" if kind == "json" else "txt"
+    path = p.get("save") or os.path.join(
+        COOKIE_DIR, f"pr-cookies-{int(time.time())}.{ext}"
+    )
+    path = os.path.abspath(os.path.expanduser(path))
+    if path == SKILL_ROOT or path.startswith(SKILL_ROOT + os.sep):
+        raise ValueError(
+            f"拒绝写入技能目录内（{path}）：该目录会被打包进公开仓库，"
+            f"请改用 /tmp 或 PR_COOKIE_DIR"
+        )
+    return path
+
+
+def _fmt_header(cs):
+    """Cookie: 请求头形态，可直接贴给 curl -H。"""
+    return "; ".join(f'{c["name"]}={c["value"]}' for c in cs)
+
+
+def _fmt_netscape(cs):
+    """Netscape cookie 文件格式，可直接 curl -b / yt-dlp --cookies / requests 使用。"""
+    out = ["# Netscape HTTP Cookie File", "# 由 patchright-browser 生成，含明文凭证", ""]
+    for c in cs:
+        dom = c.get("domain") or ""
+        # Netscape 的 #HttpOnly_ 前缀是 httpOnly 的唯一表达方式（curl 认这个前缀）
+        name = ("#HttpOnly_" + dom, c["name"]) if c.get("httpOnly") else (dom, c["name"])
+        exp = int(c.get("expires") or 0)
+        if exp < 0:                      # Playwright 用 -1 表示会话 cookie，Netscape 用 0
+            exp = 0
+        out.append("\t".join([
+            name[0],
+            "TRUE" if dom.startswith(".") else "FALSE",
+            c.get("path") or "/",
+            "TRUE" if c.get("secure") else "FALSE",
+            str(exp),
+            name[1],
+            c["value"],
+        ]))
+    return "\n".join(out) + "\n"
+
+
+def op_cookies(p):
+    """读 cookie。走 CDP 的 Storage.getCookies，在浏览器进程层执行，绕开页面 JS 沙箱
+    ⇒ HttpOnly 与跨域对它都不存在（这是它与 /eval document.cookie 的本质差别）。
+
+    默认**只回摘要、值落盘**：cookie 动辄数 KB，_trunc 会把 JSON 从中间切断，
+    调用方拿到坏数据却不报错。需要内容时读 path，或显式 inline:true。
+    """
+    ctx = STATE["ctx"]
+    urls = p.get("urls") or ([p["url"]] if p.get("url") else None)
+    cs = ctx.cookies(urls) if urls else ctx.cookies()
+    if p.get("domain"):
+        d = p["domain"].lstrip(".").lower()
+        cs = [c for c in cs if d in (c.get("domain") or "").lstrip(".").lower()]
+    if p.get("name"):
+        cs = [c for c in cs if c["name"] == p["name"]]
+    if p.get("limit"):
+        cs = cs[: int(p["limit"])]
+    fmt = p.get("format", "json")
+    if fmt == "header":
+        text = _fmt_header(cs)
+    elif fmt == "netscape":
+        text = _fmt_netscape(cs)
+    else:
+        fmt = "json"
+        text = json.dumps(cs, ensure_ascii=False, indent=2)
+    path = _cookie_path(p, fmt)
+    d = os.path.dirname(path)
+    if d:
+        os.makedirs(d, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text + "\n")
+    os.chmod(path, 0o600)                # 明文凭证，只给自己读
+    r = {
+        "count": len(cs),
+        "format": fmt,
+        "path": path,
+        "bytes": len(text.encode()),
+        "httpOnly": sum(1 for c in cs if c.get("httpOnly")),
+        "domains": sorted({c.get("domain") or "" for c in cs})[:20],
+    }
+    if p.get("inline"):
+        r["data"] = text
+    else:
+        r["names"] = [c["name"] for c in cs][:50]
+    return r
+
+
+def op_cookies_set(p):
+    """写 cookie。接受 Playwright 原生数组，或 header 字符串 + url。"""
+    if p.get("cookies"):
+        cs = p["cookies"]
+    elif p.get("header"):
+        from urllib.parse import urlsplit
+
+        if not p.get("url"):
+            raise ValueError("header 形态必须同时给 url，否则无法确定 cookie 的 domain")
+        host = urlsplit(p["url"]).hostname
+        if not host:
+            raise ValueError(f"无法从 url 解析 hostname：{p['url']}")
+        cs = []
+        for seg in p["header"].split(";"):
+            seg = seg.strip()
+            if "=" in seg:
+                k, v = seg.split("=", 1)
+                if k.strip():
+                    cs.append({"name": k.strip(), "value": v.strip(),
+                               "domain": host, "path": "/"})
+    else:
+        raise ValueError("需要 cookies 数组，或 header 字符串（配 url）")
+    for c in cs:
+        # Playwright 明确禁止 url 与 domain/path 同时出现，提前拦下给出可读错误
+        if c.get("url") and (c.get("domain") or c.get("path")):
+            raise ValueError(f"cookie {c.get('name')}: url 与 domain/path 不能同时指定")
+        if not c.get("name"):
+            raise ValueError("cookie 缺 name")
+    STATE["ctx"].add_cookies(cs)
+    return {"ok": True, "count": len(cs)}
+
+
+def op_cookies_clear(p):
+    """清 cookie。**必须带过滤条件或显式 all:true**，防止手滑清光全部登录态。"""
+    flt = {k: p[k] for k in ("name", "domain", "path") if p.get(k)}
+    if not flt:
+        if not p.get("all"):
+            raise ValueError('未指定过滤条件；确认清空全部请显式传 {"all": true}')
+        STATE["ctx"].clear_cookies()
+        return {"ok": True, "cleared_by": "ALL"}
+    STATE["ctx"].clear_cookies(**flt)
+    return {"ok": True, "cleared_by": flt}
+
+
+def op_storage(p):
+    """导出 storage_state（cookies + 各 origin 的 localStorage），用于整套登录态搬家。"""
+    path = _cookie_path(p, "json")
+    d = os.path.dirname(path)
+    if d:
+        os.makedirs(d, exist_ok=True)
+    STATE["ctx"].storage_state(path=path, indexed_db=bool(p.get("indexed_db")))
+    os.chmod(path, 0o600)
+    with open(path, encoding="utf-8") as f:
+        st = json.load(f)
+    return {
+        "path": path,
+        "cookies": len(st.get("cookies") or []),
+        "origins": [o.get("origin") for o in (st.get("origins") or [])][:20],
+        "bytes": os.path.getsize(path),
+    }
+
+
 def op_status(p):
     ctx = STATE["ctx"]
     if ctx is None or not _serving():
@@ -263,7 +423,9 @@ def op_status(p):
 
 
 OPS = {"goto": op_goto, "click": op_click, "fill": op_fill, "eval": op_eval,
-       "extract": op_extract, "shot": op_shot, "tabs": op_tabs, "status": op_status}
+       "extract": op_extract, "shot": op_shot, "tabs": op_tabs, "status": op_status,
+       "cookies": op_cookies, "cookies/set": op_cookies_set,
+       "cookies/clear": op_cookies_clear, "storage": op_storage}
 
 
 class Handler(BaseHTTPRequestHandler):

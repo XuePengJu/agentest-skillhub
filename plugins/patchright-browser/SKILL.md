@@ -1,7 +1,7 @@
 ---
 name: patchright-browser
 description: 反检测浏览器操作技能（Patchright 驱动）。当普通抓取遇到 Cloudflare/DataDome 等风控墙、强反爬站点（小红书/闲鱼等敏感操作）、需要隐身身份隔离于日常浏览器，或需要渲染/点击/登录态时使用。本技能通过常驻控制服务暴露精简 CLI，token 消耗远低于 MCP 方案。日常搜索、读静态页优先 WebFetch/curl，不要用本技能。
-version: 1.0.0
+version: 1.1.0
 license: Apache-2.0
 display_name: "Patchright 隐身浏览器"
 display_name_en: "Patchright Stealth Browser"
@@ -71,8 +71,39 @@ curl -s -X POST 127.0.0.1:9333/close
 | 批量提取 | `curl -s -X POST 127.0.0.1:9333/extract -d '{"css":"h2 a","attr":"href","limit":50}'` |
 | 截图 | `curl -s -X POST 127.0.0.1:9333/shot -d '{"full":false}'` → 返回图片路径 |
 | 标签页 | `.../tabs -d '{"op":"list"}'` / `new` / `switch` / `close` |
+| 读 cookie | `.../cookies -d '{"url":"https://x.com"}'` → 只回摘要 + 落盘路径；加 `"inline":true` 才回内容 |
+| 导出凭证 | `.../cookies -d '{"format":"netscape"}'` → 文件可直接 `curl -b` / `yt-dlp --cookies` |
+| 写 cookie | `.../cookies/set -d '{"header":"a=1; b=2","url":"https://x.com/"}'` |
+| 清 cookie | `.../cookies/clear -d '{"domain":"x.com"}'`（清全部必须显式 `{"all":true}`） |
+| 导出登录态 | `.../storage -d '{}'` → cookies + 各 origin 的 localStorage |
 
 完整参数说明见 `references/api_reference.md`。
+
+### cookie 读取：为什么不用 `document.cookie`
+
+`/eval document.cookie` 只能读到**当前页面 origin** 且**非 HttpOnly** 的 cookie，返回的还是裸字符串、没有 domain/path/expires 元数据。**登录态的核心凭证几乎全是 HttpOnly**，所以经常出现"明明登录着，`document.cookie` 却近乎空"的现象。
+
+`/cookies` 走 CDP 的 `Storage.getCookies`，在**浏览器进程层**执行，绕开页面 JS 沙箱 ⇒ **全部域名 + HttpOnly 都能拿到**，元数据完整。这是设计使然，不是漏洞。
+
+```bash
+# 当前站点（含 HttpOnly），只回摘要
+curl -s -m 20 -X POST 127.0.0.1:9333/cookies -d '{"url":"https://x.com"}'
+# → {"count":14,"httpOnly":1,"domains":[...],"names":[...],"path":"/tmp/pr-cookies-....json"}
+
+# 整个 profile 的 cookie 全量摘要（几十个站点）
+curl -s -m 20 -X POST 127.0.0.1:9333/cookies -d '{}'
+
+# 导出成 curl 能直接吃的格式
+curl -s -X POST 127.0.0.1:9333/cookies -d '{"format":"netscape"}'
+curl -s -b /tmp/pr-cookies-xxx.txt https://x.com/
+
+# 验证 HttpOnly 差异（同一站点对比）
+curl -s -X POST 127.0.0.1:9333/eval -d '{"expr":"document.cookie.split(\";\").filter(x=>x.trim()).length"}'
+```
+
+**默认只回摘要、值落盘**（`/tmp/pr-cookies-<epoch>.<ext>`，权限 `0600`）：cookie 动辄数 KB，`PR_MAX_OUT` 截断会把 JSON 从中间切断，调用方拿到坏数据却不报错。要看值就读返回的 `path`，或显式 `inline:true`。
+
+> ⚠️ **cookie = 明文登录凭证**。不要把内容贴进对话、不要 commit、不要写进技能目录（`pr.py` 已硬拦该路径——技能目录会被打包发布到公开仓库）。
 
 ## 省 token 约定
 
@@ -137,6 +168,7 @@ curl -s -X POST 127.0.0.1:9333/close
 - **不要设置自定义 user_agent**（默认即最优）
 - 遇到挑战页：`goto` 后 sleep 3~5 秒再检查，不要高频刷新
 - 操作节奏放慢：风控站点每步之间可 `sleep 1~3`
+- **cookie 是明文凭证**：`/cookies` 默认只回摘要、值落 `/tmp`（`0600`）。**不要贴进对话、不要 commit**；`pr.py` 已硬拦「写入技能目录」的路径（技能目录会被 `scripts/import_skill.py` 打包进公开仓库，排除列表只有 `profile` / `*.app` / `_icon.*`，新建目录会被原样带走）
 
 ## 自检
 
