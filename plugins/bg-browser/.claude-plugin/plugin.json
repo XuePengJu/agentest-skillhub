@@ -1,0 +1,12 @@
+{
+  "name": "bg-browser",
+  "version": "1.0.0",
+  "description": "后台常驻 Chrome + 网页实时投屏控制台。需要在后台跑一台带登录态的浏览器、不抢本机焦点地操作网页、或在网页里实时看画面并点击/拖拽/输入（含滑块验证码）、需要像桌面 Chrome 那样多标签浏览时使用。浏览器对外开放标准 CDP 9444，控制台在 9334，独立 profile，带清晰度档位。日常读静态页、搜索仍用 WebFetch/curl，不要启动本技能。",
+  "author": {
+    "name": "xuepengju",
+    "url": "https://agentest.vip"
+  },
+  "homepage": "https://agentest.vip",
+  "repository": "https://github.com/XuePengJu/agentest-skillhub",
+  "license": "Apache-2.0"
+}

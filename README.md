@@ -132,6 +132,7 @@ agentest-skillhub/
 | --- | --- | --- |
 | [`workbuddy-library-port`](./plugins/workbuddy-library-port) | 1.0.0 | **仅 WorkBuddy 可用** · 资料库搬家：把「网页页面 + 绑定的数据表」整套导出成 zip，在另一个账号/电脑上原样还原并重建绑定 |
 | [`patchright-browser`](./plugins/patchright-browser) | 1.1.0 | 反检测浏览器（Patchright 驱动）：常驻 HTTP 控制服务 + curl 一行命令，过 Cloudflare/DataDome 风控墙，token 消耗远低于 MCP。含 cookie / 登录态导出（CDP 层，可读 HttpOnly） |
+| [`bg-browser`](./plugins/bg-browser) | 1.0.0 | 后台浏览器 + 实时投屏控制台（macOS）：离屏养一台带登录态的 Chrome，画面推到 `9334` 用鼠标直接点/拖/输入，CDP 在 `9444`。多标签、清晰度档位、独立 profile。看不了图的纯抓取请用 `patchright-browser` |
 
 ## 添加一个新技能
 
@@ -185,7 +186,8 @@ git add -A && git commit -m "feat: import weather-open-meteo" && git push
 | --- | --- |
 | `profile/` | 浏览器用户数据目录，**含 cookie 与登录态** |
 | `*.app/` | macOS 应用包：体积大、内含机器相关绝对路径与代码签名 |
-| `nohup.out`、`*.log` | 运行日志 |
+| `nohup.out`、`*.log`、`*.pid` | 运行日志与进程号文件 |
+| `.last-tab-*` | 浏览器投屏类技能的运行态（最后操作的是哪个标签） |
 | `*.bak`、`*.pyc`、`__pycache__/` | 备份与编译产物 |
 | `.DS_Store`、`_skillhub_meta.json`、`workbuddy.json`、`node_modules/` | 本机元数据与依赖 |
 | `_icon.*`（任意扩展名，即 `_icon.svg` / `.png` / `.jpg` …） | **商店图标缓存**，不是技能自己的资产，见「关于图标」 |

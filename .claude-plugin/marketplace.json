@@ -7,28 +7,28 @@
   },
   "plugins": [
     {
-      "name": "workbuddy-library-port",
-      "description": "【仅 WorkBuddy 可用】把 WorkBuddy 资料库里的网页页面和它绑定的数据表整套导出成一个 zip 迁移包，或在另一个 WorkBuddy 账号 / 另一台电脑上把这个 zip 原样恢复出来，并重新建立页面与数据表的绑定。本技能依赖 WorkBuddy 内置的资料库服务端 API，只能在已登录的 WorkBuddy 客户端内运行，其它工具（Claude Code / Cursor / Copilot 等）装了无法使用。当用户提到资料库搬家、导出资料库、备份资料库页面、迁移看板/工作台/管理台给别人、打包资料库给朋友、换个账号用同一个页面、复制这个页面到别的资料库、复制资料库里的节点、导入迁移包、把 zip 还原到资料库时应使用本技能。",
+      "name": "bg-browser",
+      "description": "后台常驻 Chrome + 网页实时投屏控制台。需要在后台跑一台带登录态的浏览器、不抢本机焦点地操作网页、或在网页里实时看画面并点击/拖拽/输入（含滑块验证码）、需要像桌面 Chrome 那样多标签浏览时使用。浏览器对外开放标准 CDP 9444，控制台在 9334，独立 profile，带清晰度档位。日常读静态页、搜索仍用 WebFetch/curl，不要启动本技能。",
       "version": "1.0.0",
-      "source": "./plugins/workbuddy-library-port",
+      "source": "./plugins/bg-browser",
+      "category": "browser-automation",
+      "keywords": [
+        "browser",
+        "automation",
+        "cdp",
+        "remote-screen",
+        "persistent-profile",
+        "captcha",
+        "headless",
+        "patchright"
+      ],
       "author": {
         "name": "xuepengju",
         "url": "https://agentest.vip"
       },
       "homepage": "https://agentest.vip",
       "repository": "https://github.com/XuePengJu/agentest-skillhub",
-      "license": "Apache-2.0",
-      "category": "data-migration",
-      "keywords": [
-        "library",
-        "workbuddy",
-        "workbuddy-only",
-        "migration",
-        "export",
-        "import",
-        "backup",
-        "zip"
-      ]
+      "license": "Apache-2.0"
     },
     {
       "name": "patchright-browser",
@@ -52,6 +52,30 @@
       "homepage": "https://agentest.vip",
       "repository": "https://github.com/XuePengJu/agentest-skillhub",
       "license": "Apache-2.0"
+    },
+    {
+      "name": "workbuddy-library-port",
+      "description": "【仅 WorkBuddy 可用】把 WorkBuddy 资料库里的网页页面和它绑定的数据表整套导出成一个 zip 迁移包，或在另一个 WorkBuddy 账号 / 另一台电脑上把这个 zip 原样恢复出来，并重新建立页面与数据表的绑定。本技能依赖 WorkBuddy 内置的资料库服务端 API，只能在已登录的 WorkBuddy 客户端内运行，其它工具（Claude Code / Cursor / Copilot 等）装了无法使用。当用户提到资料库搬家、导出资料库、备份资料库页面、迁移看板/工作台/管理台给别人、打包资料库给朋友、换个账号用同一个页面、复制这个页面到别的资料库、复制资料库里的节点、导入迁移包、把 zip 还原到资料库时应使用本技能。",
+      "version": "1.0.0",
+      "source": "./plugins/workbuddy-library-port",
+      "author": {
+        "name": "xuepengju",
+        "url": "https://agentest.vip"
+      },
+      "homepage": "https://agentest.vip",
+      "repository": "https://github.com/XuePengJu/agentest-skillhub",
+      "license": "Apache-2.0",
+      "category": "data-migration",
+      "keywords": [
+        "library",
+        "workbuddy",
+        "workbuddy-only",
+        "migration",
+        "export",
+        "import",
+        "backup",
+        "zip"
+      ]
     }
   ]
 }

@@ -45,11 +45,12 @@ EXCLUDE_NAMES = {
     "node_modules",
     "__pycache__",
 }
-EXCLUDE_SUFFIXES = {".log", ".pyc", ".bak"}
+EXCLUDE_SUFFIXES = {".log", ".pyc", ".bak", ".pid"}
 # 商店图标缓存：_icon.svg / _icon.png / _icon.jpg …
 # 【不是技能自己的资产，是客户端从商店 CDN 下载的缓存】—— 见 README「关于图标」。
 # 所以按前缀排除，而不是只排 _icon.svg（那会漏掉 .png/.jpg）。
-EXCLUDE_PREFIXES = ("_icon.",)
+# .last-tab-<端口>.json 是投屏控制台的「上次停在哪页」运行时状态，同理不该发布。
+EXCLUDE_PREFIXES = ("_icon.", ".last-tab-")
 
 SLUG_RE = re.compile(r"^[A-Za-z0-9][-A-Za-z0-9._]*$")
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
